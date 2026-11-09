@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上架图合规工作台 · Listing Image Workbench</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --border: #e5e7eb;
+    --text: #1f2937; --muted: #6b7280; --faint: #9ca3af;
+    --primary: #2563eb; --primary-soft: #eff6ff;
+    --green: #16a34a; --green-soft: #f0fdf4;
+    --red: #dc2626; --red-soft: #fef2f2;
+    --yellow: #d97706; --yellow-soft: #fffbeb;
+    --code-bg: #f8fafc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 22px 16px 60px; font-size: 14px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 18px; }
+  header h1 { font-size: 22px; margin-bottom: 6px; }
+  header p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .privacy { display: inline-block; margin-top: 8px; background: var(--green-soft); color: #166534; border-radius: 20px; padding: 4px 12px; font-size: 12px; }
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn { padding: 9px 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--muted); transition: all .15s; }
+  .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 15.5px; margin-bottom: 4px; }
+  .card h3 { font-size: 13.5px; margin: 14px 0 8px; color: var(--text); }
+  .card .desc { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; line-height: 1.7; }
+  .layout { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .drop { border: 2px dashed #c7d2fe; border-radius: 12px; padding: 22px 12px; text-align: center; color: var(--primary); background: var(--primary-soft); cursor: pointer; font-size: 13px; line-height: 1.8; }
+  .drop.hover { background: #dbeafe; border-color: var(--primary); }
+  .drop small { display: block; color: var(--muted); font-size: 11.5px; }
+  #fileList { margin-top: 10px; max-height: 190px; overflow: auto; }
+  .file-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; cursor: pointer; font-size: 12.5px; }
+  .file-item.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .file-item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item .badge { font-size: 10.5px; border-radius: 4px; padding: 1px 5px; background: #f3f4f6; color: var(--muted); }
+  .preview-box { position: relative; background: #eef0f3; border-radius: 10px; overflow: hidden; min-height: 260px; display: flex; align-items: center; justify-content: center; }
+  .canvas-stack { position: relative; width: 100%; line-height: 0; }
+  .canvas-stack.hidden { display: none; }
+  #view { display: block; width: 100%; height: auto; }
+  #overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .empty-hint { color: var(--faint); font-size: 13px; padding: 60px 10px; text-align: center; line-height: 1.8; }
+  .preview-meta { margin-top: 8px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 8px 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fafafa; font-family: inherit; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+  .field .unit { font-size: 10.5px; color: #9ca3af; margin-top: 3px; line-height: 1.5; }
+  .check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text); margin: 8px 0; cursor: pointer; }
+  .check input { width: auto; }
+  .btn { border: none; border-radius: 8px; padding: 9px 15px; font-size: 13px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .btn.primary { background: var(--primary); color: #fff; }
+  .btn.ghost { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  .btn.soft { background: var(--primary-soft); color: var(--primary); border: 1px solid #bfdbfe; }
+  .btn.danger { background: var(--red-soft); color: var(--red); border: 1px solid #fecaca; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .hr { height: 1px; background: var(--border); margin: 16px 0; }
+  .hint { background: var(--yellow-soft); color: #92400e; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.75; margin-top: 10px; }
+  .hint.blue { background: var(--primary-soft); color: #1e40af; }
+  .log { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; line-height: 1.8; color: #475569; max-height: 150px; overflow: auto; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: #fafafa; }
+  .pill { display: inline-block; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .pill.pass { background: var(--green-soft); color: var(--green); }
+  .pill.warn { background: var(--yellow-soft); color: var(--yellow); }
+  .pill.fail { background: var(--red-soft); color: var(--red); }
+  .pill.na { background: #f3f4f6; color: var(--muted); }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--primary-soft); border-radius: 10px; padding: 12px; }
+  .kpi .k { font-size: 11.5px; color: var(--muted); margin-bottom: 5px; }
+  .kpi .v { font-size: 20px; font-weight: 700; }
+  .kpi.good { background: var(--green-soft); } .kpi.good .v { color: var(--green); }
+  .kpi.bad { background: var(--red-soft); } .kpi.bad .v { color: var(--red); }
+  .layer { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .layer:last-child { border-bottom: none; }
+  .layer input { margin-top: 3px; }
+  .layer b { font-weight: 600; }
+  .layer span { color: var(--muted); font-size: 12px; line-height: 1.6; display: block; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.7; overflow: auto; max-height: 420px; white-space: pre; color: #334155; }
+  .sop-step { display: flex; gap: 12px; margin-bottom: 12px; }
+  .sop-step .n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 12.5px; }
+  .sop-step .t { font-size: 13px; line-height: 1.75; }
+  .sop-step .t b { font-weight: 700; }
+  .sop-step .t span { color: var(--muted); font-size: 12.5px; }
+  ul.plain { margin-left: 18px; font-size: 13px; line-height: 1.9; }
+  footer { text-align: center; color: var(--faint); font-size: 12px; margin-top: 26px; line-height: 1.9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>上架图合规工作台</h1>
+    <p>实拍基准图 → 白底净化 → 去 AI 水印 → 双单位尺寸线 → 合规自检 → 溯源报告<br>Temu / TikTok Shop / Amazon 主图与副图，一条流水线走完</p>
+    <div class="privacy">纯浏览器本地处理 · 零网络请求 · 图片不上传</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="work">① 图像处理</button>
+    <button class="tab-btn" data-tab="check">② 合规自检</button>
+    <button class="tab-btn" data-tab="report">③ 溯源报告</button>
+    <button class="tab-btn" data-tab="sop">④ 方法 SOP</button>
+  </div>
+
+  <!-- ==================== ① 图像处理 ==================== -->
+  <div id="panelWork">
+    <div class="layout">
+      <div>
+        <div class="card">
+          <h2>图片</h2>
+          <p class="desc">支持多张导入，点列表切换当前处理图。原图始终保留，可随时重置。</p>
+          <div class="drop" id="drop">点击选择或拖入图片<small>PNG / JPG / WebP · 单张建议 ≤ 4000px</small></div>
+          <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+          <div id="fileList"></div>
+        </div>
+
+        <div class="card">
+          <h2>白底净化</h2>
+          <p class="desc">按你实拍图的实际情况选择，不要两个都猛开——会把透明塑料洗成一片白。</p>
+          <div class="grid">
+            <div class="field"><label>平场校正 · 边缘采样宽度</label><input type="number" id="ffEdge" value="90" min="8" max="240"><div class="unit">整幅底色带渐变时用</div></div>
+            <div class="field"><label>柔和白场 lo</label><input type="number" id="wLo" value="240" min="0" max="254"><div class="unit">低于此值不动</div></div>
+            <div class="field"><label>柔和白场 hi</label><input type="number" id="wHi" value="252" min="1" max="255"><div class="unit">高于此值推到纯白</div></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn soft" id="btnFlat">平场校正压白</button>
+            <button class="btn soft" id="btnWhiten">柔和白场</button>
+          </div>
+          <div class="hint">包装实拍（带渐变底、袋子褶皱）先做平场校正，再用 lo=250 / hi=254 轻推残值；AI 生成白底图直接用柔和白场即可。</div>
+        </div>
+
+        <div class="card">
+          <h2>水印清除</h2>
+          <p class="desc">在右侧预览图上<b>拖框选中水印区域</b>，或用右下角预设。逐列上下边界插值 + 羽化蒙版，只对平滑背景有效。</p>
+          <div class="grid">
+            <div class="field"><label>上下采样留白 pad</label><input type="number" id="patchPad" value="8" min="0" max="60"></div>
+            <div class="field"><label>羽化半径 px</label><input type="number" id="patchFeather" value="12" min="0" max="60"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn ghost" id="btnPresetBox">选中右下角</button>
+            <button class="btn primary" id="btnPatch">清除选区水印</button>
+          </div>
+          <div class="hint" id="boxHint">尚未框选区域。</div>
+        </div>
+
+        <div class="card">
+          <h2>尺寸标注</h2>
+          <p class="desc">在导出时叠加，不烧进底图，改数字不用重新出图。英寸自动按 1 cm = 0.3937 in 换算。</p>
+          <div class="grid">
+            <div class="field"><label>宽 / 直径 cm</label><input type="number" id="dimW" value="29.4" step="0.1"></div>
+            <div class="field"><label>高 / 长 cm</label><input type="number" id="dimH" value="16" step="0.1"></div>
+            <div class="field"><label>厚 / 深 cm（可选）</label><input type="number" id="dimD" value="3.4" step="0.1"></div>
+            <div class="field"><label>标注线颜色</label><input type="color" id="dimInk" value="#2e2e2e" style="padding:2px;height:36px"></div>
+          </div>
+          <label class="check"><input type="checkbox" id="dimEnable" checked> 导出时叠加双单位工程标注线</label>
+          <label class="check"><input type="checkbox" id="normalize" checked> 统一输出 1200 × 1200（1:1 白底）</label>
+          <label class="check"><input type="checkbox" id="showBox" checked> 预览显示主体包围盒</label>
+          <div class="hint">标注线依据主体包围盒自动定位。细高产品若顶满画面，先缩小主体再标注，否则底部没有放尺寸线的空间。</div>
+        </div>
+
+        <div class="card">
+          <h2>导出</h2>
+          <div class="btn-row">
+            <button class="btn ghost" id="btnUndo">撤销上一步</button>
+            <button class="btn ghost" id="btnReset">重置为原图</button>
+            <button class="btn primary" id="btnExportOne">导出当前 PNG</button>
+            <button class="btn soft" id="btnExportAll">批量导出 ZIP</button>
+          </div>
+          <h3>处理日志</h3>
+          <div class="log" id="log">（尚无操作）</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>预览 <span id="previewName" style="color:var(--muted);font-weight:400;font-size:12px"></span></h2>
+          <p class="desc">在图上按住鼠标拖框可设定水印区域；虚线绿框是主体包围盒。</p>
+          <div class="preview-box" id="previewBox">
+            <div class="empty-hint" id="emptyHint">还没有导入图片<br>左侧点击或拖入一张上架图开始</div>
+            <div class="canvas-stack hidden" id="canvasStack">
+              <canvas id="view"></canvas>
+              <canvas id="overlay"></canvas>
+            </div>
+          </div>
+          <div class="preview-meta">
+            <span id="metaSize">尺寸 —</span><span id="metaBBox">主体 —</span><span id="metaBox">水印选区 —</span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>几何一致性（可选）</h2>
+          <p class="desc">导入一张实拍基准图，跟当前成品图比一比结构有没有漂移。AI 编辑最容易改掉格数、部件数量和相对比例。</p>
+          <div class="btn-row">
+            <button class="btn ghost" id="btnRef">选择实拍基准图</button>
+            <button class="btn soft" id="btnCompare" disabled>对比当前图</button>
+          </div>
+          <input type="file" id="refInput" accept="image/*" class="hidden">
+          <div id="compareResult" class="hint blue hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ② 合规自检 ==================== -->
+  <div id="panelCheck" class="hidden">
+    <div class="card">
+      <h2>自动检测</h2>
+      <p class="desc">对每张图的像素做客观检查：尺寸、比例、四角白度、水印疑似、主体边距与占比。<b>图像检测只能提示风险，最终以人工放大核验为准。</b></p>
+      <div class="btn-row"><button class="btn primary" id="btnRunCheck">检测全部图片</button></div>
+      <div class="kpi-row" id="checkKpi" style="margin-top:14px"></div>
+      <table id="checkTable"><thead><tr><th style="width:26%">文件</th><th>检测结果</th></tr></thead><tbody><tr><td colspan="2" style="color:var(--muted)">点击上方按钮开始检测。</td></tr></tbody></table>
+    </div>
+    <div class="card">
+      <h2>六层人工审查</h2>
+      <p class="desc">自动检测管不了品牌、版权和授权，这几项必须人眼确认。勾选后才算通过，结果会写进溯源报告。</p>
+      <div id="layers"></div>
+      <div class="hint">AI 生成或 AI 编辑的图，按平台当期规则处理标识与披露义务（欧盟 AI 法案 2026/8 起适用）。本工具<b>不会</b>写入 C2PA / EXIF，见「溯源报告」页的说明。</div>
+    </div>
+  </div>
+
+  <!-- ==================== ③ 溯源报告 ==================== -->
+  <div id="panelReport" class="hidden">
+    <div class="card">
+      <h2>交付 / 申诉留痕报告</h2>
+      <p class="desc">把每张图的处理步骤、参数、检测结果和人工审查结论导出成 YAML。平台质疑图片来源、或者要复盘哪一步改坏了图时，这份记录就是证据链。</p>
+      <div class="grid">
+        <div class="field"><label>平台</label><select id="rpPlatform"><option>Temu</option><option>TikTok Shop</option><option>Amazon</option><option>SHEIN</option><option>其他</option></select></div>
+        <div class="field"><label>产品名</label><input id="rpProduct" placeholder="例：13格透明分格收纳盒"></div>
+        <div class="field"><label>几何锚点（逗号分隔）</label><input id="rpGeometry" placeholder="单层13格, 平板盖, 左右各一只小提手"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnGenReport">生成报告</button>
+        <button class="btn ghost" id="btnCopyReport">复制</button>
+        <button class="btn soft" id="btnDownloadReport">下载 .yaml</button>
+      </div>
+      <pre id="reportOut" style="margin-top:14px">点击「生成报告」。</pre>
+    </div>
+    <div class="card">
+      <h2>关于元数据留痕：这里有个坑</h2>
+      <p class="desc">浏览器导出的 PNG <b>不携带 EXIF / C2PA 元数据</b>，所以本工具生成的 YAML 是"外部证据链"，不是写入图片内部的凭证。要做到图片自带来源声明，需要在导出后补一步命令行处理：</p>
+      <pre>exiftool -ImageDescription="AI-assisted edit of seller-owned product photo; geometry locked to reference shot" \
+          -Artist="seller" -Copyright="seller" \
+          -XMP:CreatorTool="listing-image-workbench v1.0" \
+          shot1_main.png
+
+# 需要可验证的 C2PA 签名时，另用签名工具对成品图签发 manifest
+c2patool shot1_main.png --manifest manifest.json --output signed.png</pre>
+      <div class="hint">保留原始实拍图、每一步的中间产物和这份 YAML，比事后补一句"这是我自己拍的"有用得多。平台规则与 AI 标识要求以当期官方政策为准，本工具不构成合规保证。</div>
+    </div>
+  </div>
+
+  <!-- ==================== ④ 方法 SOP ==================== -->
+  <div id="panelSop" class="hidden">
+    <div class="card">
+      <h2>从实拍图到合规上架图：六步</h2>
+      <p class="desc">这套流程来自反复被图像模型坑出来的经验，核心不是"把提示词写更好"，而是<b>把几何锁死、把不可控的部分从生成里拿出来</b>。</p>
+      <div class="sop-step"><div class="n">1</div><div class="t"><b>先提炼几何锚点，再出图</b><br><span>从实拍图里逐条写死部件清单、数量、相对比例（例：单层 13 格 = 左列 6 小格 + 中间贯通长格 + 右列 6 小格；平板盖无分格）。纯文字描述"13 个格子"对图像模型几乎无效，会反复漂移成 36 格、双层格。</span></div></div>
+      <div class="sop-step"><div class="n">2</div><div class="t"><b>以实拍图为 image1 做编辑，只换内容</b><br><span>基准图人工核对通过后，后续变体都以它为首图输入，提示里明确 "keep dividers identical, only change contents"。同一张正确底图连做内容替换，能批量产出主题一致的多用途图。</span></div></div>
+      <div class="sop-step"><div class="n">3</div><div class="t"><b>构图给水印留白</b><br><span>让主体只占画面中央 70%，四角留纯白。平台自动加的"AI 生成"水印落在白底上才修得干净；若压在杯沿、盒沿这类硬边上，插值会糊掉结构 —— 这种情况重新出图，别硬修。</span></div></div>
+      <div class="sop-step"><div class="n">4</div><div class="t"><b>白底净化按素材类型分流</b><br><span>AI 白底图 → 柔和白场；整幅带渐变的实拍 → 按每行左右背景块拟合水平梯度做平场校正，再轻推近白残值。全图洪泛填白会在边缘留灰斑，必须配合主体包围盒 + 羽化蒙版。</span></div></div>
+      <div class="sop-step"><div class="n">5</div><div class="t"><b>尺寸标注永远不要烧进 AI 图</b><br><span>用代码叠加工程线 + 白描边双单位文字，改数字只改参数重跑。自检技巧：量出产品像素宽反推 px/cm，再用它算高度落点；若落点和肉眼看到的底部对不上，说明给的直径/高度比例本身有问题。</span></div></div>
+      <div class="sop-step"><div class="n">6</div><div class="t"><b>六层审查 + 溯源留档</b><br><span>意图 / 品牌 / 版权 / 文化 / 平台 / 授权逐项过，右下角放大复查水印残字，导出报告留档。AI 图按平台要求做标识与披露，别把"没被查到"当合规。</span></div></div>
+    </div>
+    <div class="card">
+      <h2>高频踩坑清单</h2>
+      <ul class="plain">
+        <li><b>透明产品不能抠图合成场景</b>：白底会透进塑料内部，洪水填充必然泄漏。改用"闭合状态"生成场景图。</li>
+        <li><b>水印尺寸不固定</b>：不是每次都 128×80，可能一直延伸到画面最底边。修完必须放大右下角复查，别信第一眼的缩略图。</li>
+        <li><b>白色水雾 / 水柱在纯白底上等于没拍到</b>：这类图换浅灰渐变底 + 逆光，否则功能演示不成立。</li>
+        <li><b>四宫格别把图贴满格子</b>：缩到格子 86%，下方留标签带，否则标签压在产品主体上。</li>
+        <li><b>AI 会把"装水"带进包装图</b>：密封袋里出现半瓶水不合逻辑，提示里显式写 empty and dry / no water line。</li>
+        <li><b>细高产品在 1200 方图里几乎顶满</b>：先缩到 0.80 再画标注线；包围盒阈值取 238 才能忽略极淡拖影（246 会把软投影算进主体导致偏置）。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>这个工具不做什么</h2>
+      <ul class="plain">
+        <li>不生成图片 —— 图像生成交给你惯用的模型，本工具只接管生成之后不可控、不该交给模型的部分。</li>
+        <li>不保证去水印成功 —— 只对平滑背景有效，压在产品硬边上应重新出图。</li>
+        <li>不替代平台规则 —— 各平台主图规范、AI 标识与税则持续变化，以官方当期政策为准。</li>
+        <li>不上传、不存储、不联网 —— 关掉页面数据就没了，报告需要你自己下载保存。</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    上架图合规工作台 v1.0 · 单文件 HTML / 原生 Canvas / 零依赖 · MIT<br>
+    作者在一线做跨境上架图，工具里的规则与坑都来自实操；给自己做的工具，顺便解决同类卖家的同一个问题。
+  </footer>
+</div>
+
+<!-- ==================== 核心算法：与 DOM 完全解耦，可独立测试 ==================== -->
+<script id="core">
+var CORE = (function () {
+  'use strict';
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function smoothstep(a, b, x) { var t = clamp((x - a) / Math.max(1e-6, b - a), 0, 1); return t * t * (3 - 2 * t); }
+
+  /** 柔和白场：把接近纯白的背景推到 255，保留阴影与主体（对应 whiten(lo, hi)） */
+  function whiten(data, w, h, lo, hi) {
+    var out = new Uint8ClampedArray(data.length);
+    var span = Math.max(1, hi - lo);
+    for (var i = 0; i < data.length; i += 4) {
+      for (var c = 0; c < 3; c++) {
+        var v = data[i + c];
+        var t = clamp((v - lo) / span, 0, 1);
+        out[i + c] = v + (255 - v) * t * t;
+      }
+      out[i + 3] = data[i + 3];
+    }
+    return out;
+  }
+
+  /** 平场校正压白：按每行左右背景块拟合水平线性梯度，img / gradient * 255
+   *  只让近中性的亮像素参与端点估计，避免产品/杂物遮住边缘块时把整行拉偏。 */
+  function flatField(data, w, h, edge) {
+    edge = clamp(edge | 0, 8, Math.min(240, w >> 2));
+    var out = new Uint8ClampedArray(data);
+    for (var y = 0; y < h; y++) {
+      var L = [0, 0, 0], R = [0, 0, 0], nL = [0, 0, 0], nR = [0, 0, 0];
+      var row = y * w * 4;
+      for (var x = 0; x < edge; x++) {
+        sampleSide(data, row + x * 4, L, nL);
+        sampleSide(data, row + (w - 1 - x) * 4, R, nR);
+      }
+      var gl = [0, 0, 0], gr = [0, 0, 0];
+      for (var c = 0; c < 3; c++) {
+        gl[c] = nL[c] ? clamp(L[c] / nL[c], 60, 255) : 250;
+        gr[c] = nR[c] ? clamp(R[c] / nR[c], 60, 255) : 250;
+      }
+      for (var xx = 0; xx < w; xx++) {
+        var t = w > 1 ? xx / (w - 1) : 0;
+        var p = row + xx * 4;
+        for (var cc = 0; cc < 3; cc++) {
+          var g = gl[cc] + (gr[cc] - gl[cc]) * t;
+          out[p + cc] = data[p + cc] * 255 / g;
+        }
+      }
+    }
+    return out;
+  }
+  function sampleSide(data, p, acc, cnt) {
+    var r = data[p], g = data[p + 1], b = data[p + 2];
+    if (Math.min(r, g, b) < 180 || Math.max(r, g, b) - Math.min(r, g, b) > 40) return;
+    acc[0] += r; acc[1] += g; acc[2] += b;
+    cnt[0]++; cnt[1]++; cnt[2]++;
+  }
+
+  /** 羽化蒙版去水印：逐列取选区上下边界颜色做线性插值。
+   *  框内完全替换（避免边缘留一圈水印残字），羽化只作用在框外 feather 像素做过渡。 */
+  function patchVertical(data, w, h, box, pad, feather) {
+    var x0 = clamp(Math.round(box.x0), 0, w - 1), x1 = clamp(Math.round(box.x1), 1, w);
+    var y0 = clamp(Math.round(box.y0), 0, h - 1), y1 = clamp(Math.round(box.y1), 1, h);
+    if (x1 <= x0 || y1 <= y0) return new Uint8ClampedArray(data);
+    pad = clamp(pad | 0, 0, 60);
+    feather = clamp(feather | 0, 0, 60);
+    var out = new Uint8ClampedArray(data);
+    var topY = clamp(y0 - pad - 1, 0, h - 1), botY = clamp(y1 + pad - 1, 0, h - 1);
+    var ex0 = clamp(x0 - feather, 0, w), ex1 = clamp(x1 + feather, 0, w);
+    var ey0 = clamp(y0 - feather, 0, h), ey1 = clamp(y1 + feather, 0, h);
+    for (var x = ex0; x < ex1; x++) {
+      var sx = clamp(x, x0, x1 - 1);
+      var top = [0, 0, 0], bot = [0, 0, 0];
+      for (var c = 0; c < 3; c++) {
+        // 取 3 行 3 列均值，降低噪点被复制进补丁的概率
+        top[c] = avgWindow(data, w, h, sx, topY, c);
+        bot[c] = avgWindow(data, w, h, sx, botY, c);
+      }
+      for (var y = ey0; y < ey1; y++) {
+        var t = clamp((y - y0) / Math.max(1, y1 - y0 - 1), 0, 1);
+        var d = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+        var m = 1;
+        if (d < 0) m = feather > 0 ? smoothstep(0, feather, feather + d) : 0;
+        if (m <= 0) continue;
+        var p = (y * w + x) * 4;
+        for (var cc = 0; cc < 3; cc++) {
+          var fill = top[cc] + (bot[cc] - top[cc]) * t;
+          out[p + cc] = data[p + cc] * (1 - m) + fill * m;
+        }
+      }
+    }
+    return out;
+  }
+  function avgWindow(data, w, h, cx, cy, c) {
+    var sum = 0, n = 0;
+    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+      var x = clamp(cx + dx, 0, w - 1), y = clamp(cy + dy, 0, h - 1);
+      sum += data[(y * w + x) * 4 + c]; n++;
+    }
+    return sum / n;
+  }
+
+  /** 主体包围盒：min(R,G,B) < thr 的像素范围。238 可忽略极淡拖影 */
+  function contentBBox(data, w, h, thr) {
+    thr = thr === undefined ? 238 : thr;
+    var x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (var y = 0; y < h; y++) {
+      var row = y * w * 4;
+      for (var x = 0; x < w; x++) {
+        var p = row + x * 4;
+        if (Math.min(data[p], data[p + 1], data[p + 2]) < thr) {
+          if (x < x0) x0 = x; if (x > x1) x1 = x;
+          if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+      }
+    }
+    return x1 < x0 ? null : { x0: x0, y0: y0, x1: x1, y1: y1, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  /** 四角纯度：每角 size×size 区域内近纯白像素占比与平均亮度 */
+  function cornerStats(data, w, h, size) {
+    size = clamp(size | 0, 4, Math.min(w, h) >> 2);
+    var regions = [[0, 0], [w - size, 0], [0, h - size], [w - size, h - size]];
+    return regions.map(function (r) {
+      var white = 0, sum = 0, n = 0;
+      for (var y = r[1]; y < r[1] + size; y++) for (var x = r[0]; x < r[0] + size; x++) {
+        var p = (y * w + x) * 4;
+        var lum = (data[p] + data[p + 1] + data[p + 2]) / 3;
+        if (Math.min(data[p], data[p + 1], data[p + 2]) >= 245) white++;
+        sum += lum; n++;
+      }
+      return { whiteRatio: n ? white / n : 0, mean: n ? sum / n : 255 };
+    });
+  }
+
+  /** 右下角水印疑似：平台/AI 水印高频区。
+   *  用同高度的左侧区域做暗像素对照，而不是拿四角纯度互比——带水平渐变的实拍底图
+   *  右侧天然更亮，四角互比会把水印"抵消"掉造成漏检。 */
+  function watermarkSuspect(data, w, h) {
+    var x0 = Math.floor(w * 0.70), y0 = Math.floor(h * 0.82), lx1 = Math.floor(w * 0.30);
+    var dark = 0, n = 0, leftDark = 0, leftN = 0;
+    for (var y = y0; y < h; y++) {
+      for (var x = x0; x < w; x++) {
+        var p = (y * w + x) * 4;
+        if (Math.min(data[p], data[p + 1], data[p + 2]) < 230) dark++;
+        n++;
+      }
+      for (var lx = 0; lx < lx1; lx++) {
+        var lp = (y * w + lx) * 4;
+        if (Math.min(data[lp], data[lp + 1], data[lp + 2]) < 230) leftDark++;
+        leftN++;
+      }
+    }
+    return {
+      density: n ? dark / n : 0,
+      leftDensity: leftN ? leftDark / leftN : 0
+    };
+  }
+
+  /** 几何相似度：缩到 n×n 灰度并归一化后比较平均绝对差，仅作漂移提示 */
+  function grayThumb(data, w, h, n) {
+    var out = new Float32Array(n * n);
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+      var sx = Math.floor(x * w / n), sy = Math.floor(y * h / n);
+      var p = (sy * w + sx) * 4;
+      out[y * n + x] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+    }
+    var mean = 0, i;
+    for (i = 0; i < out.length; i++) mean += out[i];
+    mean /= out.length;
+    var varr = 0;
+    for (i = 0; i < out.length; i++) varr += (out[i] - mean) * (out[i] - mean);
+    var sd = Math.sqrt(varr / out.length) || 1;
+    for (i = 0; i < out.length; i++) out[i] = (out[i] - mean) / sd;
+    return out;
+  }
+  function geometryScore(a, aw, ah, b, bw, bh) {
+    var n = 64, ga = grayThumb(a, aw, ah, n), gb = grayThumb(b, bw, bh, n);
+    var mad = 0;
+    for (var i = 0; i < ga.length; i++) mad += Math.abs(ga[i] - gb[i]);
+    mad /= ga.length;
+    return clamp(1 - mad / 2.2, 0, 1);
+  }
+
+  /** 合规自检：返回逐项结论 + 客观测量值 */
+  function checkImage(data, w, h, opts) {
+    opts = opts || {};
+    var target = opts.target || 1200;
+    var bbox = contentBBox(data, w, h, opts.thr || 238);
+    var cs = cornerStats(data, w, h, Math.floor(Math.min(w, h) * 0.08));
+    var wm = watermarkSuspect(data, w, h);
+    var items = [];
+    function add(code, level, msg) { items.push({ code: code, level: level, msg: msg }); }
+
+    add('size', (w === target && h === target) ? 'pass' : 'warn',
+      (w === target && h === target) ? '尺寸 ' + w + '×' + h + ' 符合目标' : '当前 ' + w + '×' + h + '，未归一到 ' + target + '×' + target + '（勾选「统一输出」即可）');
+    add('ratio', w === h ? 'pass' : 'warn', w === h ? '1:1 方图' : '非 1:1，平台主图一般要求方图');
+
+    var minWhite = Math.min(cs[0].whiteRatio, cs[1].whiteRatio, cs[2].whiteRatio, cs[3].whiteRatio);
+    add('background', minWhite >= 0.97 ? 'pass' : 'warn',
+      minWhite >= 0.97 ? '四角背景接近纯白' : '四角存在非白像素（最差角纯白占比 ' + (minWhite * 100).toFixed(1) + '%）；场景副图可忽略，主图需确认');
+
+    var suspicious = wm.density > 0.02 && wm.density > wm.leftDensity + 0.01;
+    add('watermark', suspicious ? 'warn' : 'pass',
+      suspicious ? '右下角暗像素密度 ' + (wm.density * 100).toFixed(1) + '%（同高度左侧对照 ' + (wm.leftDensity * 100).toFixed(1) + '%），疑似平台/AI 水印 —— 必须放大核验' : '右下角未发现明显水印痕迹');
+
+    if (!bbox) {
+      add('bbox', 'warn', '未检出主体，可能是全白图或阈值不合适');
+    } else {
+      var marginPx = Math.min(bbox.x0, bbox.y0, w - 1 - bbox.x1, h - 1 - bbox.y1);
+      var marginPct = marginPx / Math.min(w, h) * 100;
+      add('margin', marginPct >= 2 ? 'pass' : 'warn',
+        marginPct >= 2 ? '主体四周留白 ' + marginPct.toFixed(1) + '%' : '主体贴边（最小边距 ' + marginPct.toFixed(1) + '%），尺寸标注线可能没地方放');
+      var fill = Math.max(bbox.w / w, bbox.h / h);
+      add('fill', fill <= 0.90 ? 'pass' : 'warn',
+        fill <= 0.90 ? '主体占画面 ' + (fill * 100).toFixed(0) + '%，构图合适' : '主体占画面 ' + (fill * 100).toFixed(0) + '%，过满；细高产品建议缩到 0.80 再标注');
+    }
+    return {
+      items: items,
+      bbox: bbox,
+      corners: cs,
+      watermark: wm,
+      counts: {
+        pass: items.filter(function (i) { return i.level === 'pass'; }).length,
+        warn: items.filter(function (i) { return i.level === 'warn'; }).length,
+        fail: items.filter(function (i) { return i.level === 'fail'; }).length
+      }
+    };
+  }
+
+  /** CRC32（ZIP store 模式用） */
+  function crc32(buf) {
+    if (!crc32.table) {
+      var t = new Uint32Array(256), c;
+      for (var n = 0; n < 256; n++) {
+        c = n;
+        for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[n] = c >>> 0;
+      }
+      crc32.table = t;
+    }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < buf.length; i++) crc = crc32.table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  /** 零压缩 ZIP 打包：entries = [{name, bytes:Uint8Array}] */
+  function zipStore(entries) {
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    entries.forEach(function (e) {
+      var name = enc.encode(e.name), bytes = e.bytes, crc = crc32(bytes);
+      var local = new Uint8Array(30 + name.length), lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+      lv.setUint16(8, 0, true); lv.setUint32(10, crc, true);
+      lv.setUint32(14, bytes.length, true); lv.setUint32(18, bytes.length, true);
+      lv.setUint16(22, name.length, true); lv.setUint16(24, 0, true);
+      local.set(name, 30);
+      parts.push(local, bytes);
+      var cd = new Uint8Array(46 + name.length), cv = new DataView(cd.buffer);
+      cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true);
+      cv.setUint32(12, crc, true); cv.setUint32(16, bytes.length, true); cv.setUint32(20, bytes.length, true);
+      cv.setUint16(24, name.length, true); cv.setUint32(42, offset, true);
+      cd.set(name, 46);
+      central.push(cd);
+      offset += local.length + bytes.length;
+    });
+    var cdSize = central.reduce(function (s, c) { return s + c.length; }, 0);
+    var eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true); ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+    var all = parts.concat(central, [eocd]);
+    var total = all.reduce(function (s, p) { return s + p.length; }, 0);
+    var out = new Uint8Array(total), pos = 0;
+    all.forEach(function (p) { out.set(p, pos); pos += p.length; });
+    return out;
+  }
+
+  return {
+    clamp: clamp, whiten: whiten, flatField: flatField, patchVertical: patchVertical,
+    contentBBox: contentBBox, cornerStats: cornerStats, watermarkSuspect: watermarkSuspect,
+    geometryScore: geometryScore, checkImage: checkImage, crc32: crc32, zipStore: zipStore
+  };
+})();
+</script>
+
+<!-- ==================== UI 层 ==================== -->
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { docs: [], activeId: null, box: null, ref: null, checks: {}, report: '' };
+  var LAYERS = [
+    ['L1', '意图与品类', '非违禁品、非受限品类，图片不暗示医疗/功效等未证实宣称'],
+    ['L2', '品牌', '无他人 Logo、商标、包装、店铺名；自有品牌需有授权'],
+    ['L3', '版权与 IP', '无影视/动漫/球队元素、无未授权字体与图库素材'],
+    ['L4', '文化与市场', '目标市场无数字、颜色、手势、宗教禁忌'],
+    ['L5', '平台规范', '1:1 / 白底 / 无水印 / 无边框 / 无人物手部 / 图上文字符合当期规则'],
+    ['L6', '发布授权', '实拍图为自己拍摄或已获授权；AI 生成/编辑图已按平台要求标识与披露']
+  ];
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll('.tab-btn').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      ['work', 'check', 'report', 'sop'].forEach(function (t) {
+        $('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== b.dataset.tab);
+      });
+    };
+  });
+
+  // ---------- 图片导入 ----------
+  var drop = $('drop'), fileInput = $('fileInput');
+  drop.onclick = function () { fileInput.click(); };
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('hover'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('hover'); });
+  });
+  drop.addEventListener('drop', function (e) { loadFiles(Array.from(e.dataTransfer.files)); });
+  fileInput.onchange = function () { loadFiles(Array.from(fileInput.files)); fileInput.value = ''; };
+
+  function loadFiles(files) {
+    var imgs = files.filter(function (f) { return /^image\//.test(f.type); });
+    if (!imgs.length) { alert('请选择图片文件'); return; }
+    imgs.forEach(function (f) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          var maxSide = 4000, scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          var ctx = c.getContext('2d', { willReadFrequently: true });
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          var idata = ctx.getImageData(0, 0, w, h);
+          var doc = {
+            id: 'd' + Date.now() + Math.random().toString(36).slice(2, 6),
+            name: f.name, w: w, h: h,
+            original: new Uint8ClampedArray(idata.data),
+            current: new Uint8ClampedArray(idata.data),
+            history: [], steps: []
+          };
+          state.docs.push(doc);
+          if (!state.activeId) state.activeId = doc.id;
+          renderFileList(); render(); addLog('导入 ' + f.name + ' (' + w + '×' + h + ')');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function activeDoc() {
+    return state.docs.filter(function (d) { return d.id === state.activeId; })[0] || null;
+  }
+  function renderFileList() {
+    var el = $('fileList');
+    el.innerHTML = state.docs.map(function (d) {
+      return '<div class="file-item ' + (d.id === state.activeId ? 'active' : '') + '" data-id="' + d.id + '">' +
+        '<span class="nm">' + escapeHtml(d.name) + '</span><span class="badge">' + d.steps.length + ' 步</span></div>';
+    }).join('') || '<div style="color:var(--muted);font-size:12px">（暂无图片）</div>';
+    el.querySelectorAll('.file-item').forEach(function (item) {
+      item.onclick = function () {
+        state.activeId = item.dataset.id; state.box = null;
+        renderFileList(); render();
+      };
+    });
+  }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function addLog(text) {
+    var el = $('log');
+    var line = '[' + new Date().toLocaleTimeString('zh-CN', { hour12: false }) + '] ' + text;
+    el.textContent = el.textContent.indexOf('（尚无操作）') === 0 ? line : line + '\n' + el.textContent;
+  }
+
+  // ---------- 像素写回 ----------
+  function pushHistory(doc) {
+    doc.history.push(new Uint8ClampedArray(doc.current));
+    if (doc.history.length > 6) doc.history.shift();
+  }
+  function applyCore(fn, label, params) {
+    var d = activeDoc(); if (!d) { alert('先导入一张图片'); return; }
+    pushHistory(d);
+    d.current = fn(d.current, d.w, d.h);
+    d.steps.push({ step: label, params: params || {} });
+    state.checks[d.id] = null;
+    renderFileList(); render(); addLog(label + ' · ' + d.name + ' ' + JSON.stringify(params || {}));
+  }
+
+  $('btnFlat').onclick = function () {
+    var edge = Number($('ffEdge').value) || 90;
+    applyCore(function (data, w, h) { return CORE.flatField(data, w, h, edge); }, 'flat_field', { edge: edge });
+  };
+  $('btnWhiten').onclick = function () {
+    var lo = Number($('wLo').value), hi = Number($('wHi').value);
+    if (hi <= lo) { alert('hi 必须大于 lo'); return; }
+    applyCore(function (data, w, h) { return CORE.whiten(data, w, h, lo, hi); }, 'whiten', { lo: lo, hi: hi });
+  };
+  $('btnPatch').onclick = function () {
+    var d = activeDoc(); if (!d) { alert('先导入一张图片'); return; }
+    if (!state.box) { alert('请先在预览图上拖框选中水印区域'); return; }
+    var pad = Number($('patchPad').value) || 0, feather = Number($('patchFeather').value) || 0;
+    var box = state.box;
+    applyCore(function (data, w, h) { return CORE.patchVertical(data, w, h, box, pad, feather); },
+      'patch_vertical', { box: roundBox(box), pad: pad, feather: feather });
+  };
+  $('btnPresetBox').onclick = function () {
+    var d = activeDoc(); if (!d) { alert('先导入一张图片'); return; }
+    state.box = { x0: Math.floor(d.w * 0.70), y0: Math.floor(d.h * 0.82), x1: d.w, y1: d.h };
+    render();
+  };
+  $('btnUndo').onclick = function () {
+    var d = activeDoc(); if (!d || !d.history.length) { alert('没有可撤销的操作'); return; }
+    d.current = d.history.pop(); d.steps.pop(); state.checks[d.id] = null;
+    renderFileList(); render(); addLog('撤销 · ' + d.name);
+  };
+  $('btnReset').onclick = function () {
+    var d = activeDoc(); if (!d) return;
+    d.current = new Uint8ClampedArray(d.original); d.history = []; d.steps = [];
+    state.box = null; state.checks[d.id] = null;
+    renderFileList(); render(); addLog('重置为原图 · ' + d.name);
+  };
+
+  // ---------- 渲染 ----------
+  var view = $('view'), overlay = $('overlay');
+  function finalCanvas(doc) {
+    // 1) 当前像素 → 2) 归一到正方形白底 → 3) 叠加尺寸标注
+    var src = document.createElement('canvas'); src.width = doc.w; src.height = doc.h;
+    src.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(doc.current), doc.w, doc.h), 0, 0);
+    var size = $('normalize').checked ? 1200 : Math.max(doc.w, doc.h);
+    var out = document.createElement('canvas'); out.width = size; out.height = size;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+    var s = Math.min(size / doc.w, size / doc.h);
+    var dw = doc.w * s, dh = doc.h * s;
+    ctx.drawImage(src, (size - dw) / 2, (size - dh) / 2, dw, dh);
+    if ($('dimEnable').checked) {
+      var idata = ctx.getImageData(0, 0, size, size);
+      var bbox = CORE.contentBBox(idata.data, size, size, 238);
+      if (bbox) drawDimensions(ctx, size, bbox);
+    }
+    return out;
+  }
+  function drawDimensions(ctx, S, b) {
+    var W = Number($('dimW').value) || 0, H = Number($('dimH').value) || 0, D = Number($('dimD').value) || 0;
+    var ink = $('dimInk').value || '#2e2e2e', unit = 0.3937;
+    var fs = Math.max(16, S * 0.037);
+    ctx.save(); ctx.lineWidth = Math.max(2, S * 0.0033); ctx.strokeStyle = ink; ctx.fillStyle = ink;
+    ctx.font = '700 ' + fs + 'px Arial, "PingFang SC", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    function halo(txt, x, y, rot) {
+      ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot);
+      ctx.lineWidth = Math.max(3, fs * 0.22); ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round';
+      ctx.strokeText(txt, 0, 0); ctx.fillText(txt, 0, 0); ctx.restore();
+    }
+    if (W > 0) {
+      var ly = Math.min(b.y1 + S * 0.055, S - fs * 1.8);
+      ctx.beginPath(); ctx.moveTo(b.x0, ly); ctx.lineTo(b.x1, ly); ctx.stroke();
+      [b.x0, b.x1].forEach(function (x) { ctx.beginPath(); ctx.moveTo(x, ly - S * 0.014); ctx.lineTo(x, ly + S * 0.014); ctx.stroke(); });
+      halo(W.toFixed(1) + ' cm / ' + (W * unit).toFixed(2) + ' in', (b.x0 + b.x1) / 2, ly + fs * 1.05, 0);
+    }
+    if (H > 0) {
+      var lx = Math.min(b.x1 + S * 0.055, S - fs * 1.6);
+      ctx.beginPath(); ctx.moveTo(lx, b.y0); ctx.lineTo(lx, b.y1); ctx.stroke();
+      [b.y0, b.y1].forEach(function (y) { ctx.beginPath(); ctx.moveTo(lx - S * 0.014, y); ctx.lineTo(lx + S * 0.014, y); ctx.stroke(); });
+      halo(H.toFixed(1) + ' cm / ' + (H * unit).toFixed(2) + ' in', lx + fs * 0.9, (b.y0 + b.y1) / 2, -Math.PI / 2);
+    }
+    if (D > 0) halo('D ' + D.toFixed(1) + ' cm / ' + (D * unit).toFixed(2) + ' in', S / 2, S - fs * 0.9, 0);
+    ctx.restore();
+  }
+  function render() {
+    var d = activeDoc();
+    $('emptyHint').classList.toggle('hidden', !!d);
+    $('canvasStack').classList.toggle('hidden', !d);
+    if (!d) {
+      $('previewName').textContent = ''; $('metaSize').textContent = '尺寸 —';
+      $('metaBBox').textContent = '主体 —'; $('metaBox').textContent = '水印选区 —';
+      $('boxHint').textContent = '尚未框选区域。'; return;
+    }
+    var fin = finalCanvas(d);
+    view.width = fin.width; view.height = fin.height;
+    view.getContext('2d').drawImage(fin, 0, 0);
+    overlay.width = fin.width; overlay.height = fin.height;
+    var octx = overlay.getContext('2d'); octx.clearRect(0, 0, fin.width, fin.height);
+    var scale = $('normalize').checked ? 1200 / Math.max(d.w, d.h) : 1;
+    var offX = (fin.width - d.w * scale) / 2, offY = (fin.height - d.h * scale) / 2;
+
+    var bbox = CORE.contentBBox(d.current, d.w, d.h, 238);
+    d._bbox = bbox;
+    if (bbox && $('showBox').checked) {
+      octx.save(); octx.strokeStyle = '#16a34a'; octx.setLineDash([10, 8]); octx.lineWidth = 3;
+      octx.strokeRect(bbox.x0 * scale + offX, bbox.y0 * scale + offY, bbox.w * scale, bbox.h * scale);
+      octx.restore();
+    }
+    if (state.box) {
+      var b = state.box;
+      octx.save(); octx.strokeStyle = '#dc2626'; octx.lineWidth = 3; octx.setLineDash([6, 5]);
+      octx.strokeRect(b.x0 * scale + offX, b.y0 * scale + offY, (b.x1 - b.x0) * scale, (b.y1 - b.y0) * scale);
+      octx.fillStyle = 'rgba(220,38,38,.12)';
+      octx.fillRect(b.x0 * scale + offX, b.y0 * scale + offY, (b.x1 - b.x0) * scale, (b.y1 - b.y0) * scale);
+      octx.restore();
+    }
+    $('previewName').textContent = '· ' + d.name;
+    $('metaSize').textContent = '尺寸 ' + d.w + '×' + d.h + ' → ' + fin.width + '×' + fin.height;
+    $('metaBBox').textContent = '主体 ' + (bbox ? bbox.w + '×' + bbox.h + 'px' : '未检出');
+    $('metaBox').textContent = '水印选区 ' + (state.box ? Math.round(state.box.x1 - state.box.x0) + '×' + Math.round(state.box.y1 - state.box.y0) + 'px' : '未选');
+    $('boxHint').textContent = state.box
+      ? '已选 (' + Math.round(state.box.x0) + ',' + Math.round(state.box.y0) + ') → (' + Math.round(state.box.x1) + ',' + Math.round(state.box.y1) + ')。若水印压在产品硬边上，请重新出图而不是硬修。'
+      : '尚未框选区域。可点「选中右下角」用预设，或在预览图上拖拽。';
+  }
+
+  // ---------- 框选 ----------
+  var dragging = false, dragStart = null;
+  overlay.addEventListener('mousedown', function (e) {
+    var d = activeDoc(); if (!d) return;
+    dragging = true; dragStart = toImage(e); state.box = null; render();
+  });
+  overlay.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    var p = toImage(e), s = dragStart;
+    state.box = { x0: Math.min(s.x, p.x), y0: Math.min(s.y, p.y), x1: Math.max(s.x, p.x), y1: Math.max(s.y, p.y) };
+    drawOverlayOnly();
+  });
+  ['mouseup', 'mouseleave'].forEach(function (ev) {
+    overlay.addEventListener(ev, function () { if (dragging) { dragging = false; render(); } });
+  });
+  function toImage(e) {
+    var d = activeDoc(), r = overlay.getBoundingClientRect();
+    var px = (e.clientX - r.left) / r.width * overlay.width;
+    var py = (e.clientY - r.top) / r.height * overlay.height;
+    var scale = $('normalize').checked ? 1200 / Math.max(d.w, d.h) : 1;
+    var offX = (overlay.width - d.w * scale) / 2, offY = (overlay.height - d.h * scale) / 2;
+    return {
+      x: CORE.clamp((px - offX) / scale, 0, d.w),
+      y: CORE.clamp((py - offY) / scale, 0, d.h)
+    };
+  }
+  function drawOverlayOnly() {
+    // 拖动时只重画叠加层：复用 render() 已设定的画布尺寸与缓存的包围盒，不重建 1200² 图像
+    var d = activeDoc(); if (!d) return;
+    var S = overlay.width, scale = $('normalize').checked ? 1200 / Math.max(d.w, d.h) : 1;
+    var offX = (S - d.w * scale) / 2, offY = (S - d.h * scale) / 2;
+    var octx = overlay.getContext('2d'); octx.clearRect(0, 0, overlay.width, overlay.height);
+    var bbox = d._bbox === undefined ? CORE.contentBBox(d.current, d.w, d.h, 238) : d._bbox;
+    if (bbox && $('showBox').checked) {
+      octx.save(); octx.strokeStyle = '#16a34a'; octx.setLineDash([10, 8]); octx.lineWidth = 3;
+      octx.strokeRect(bbox.x0 * scale + offX, bbox.y0 * scale + offY, bbox.w * scale, bbox.h * scale); octx.restore();
+    }
+    if (state.box) {
+      var b = state.box;
+      octx.save(); octx.strokeStyle = '#dc2626'; octx.lineWidth = 3; octx.setLineDash([6, 5]);
+      octx.strokeRect(b.x0 * scale + offX, b.y0 * scale + offY, (b.x1 - b.x0) * scale, (b.y1 - b.y0) * scale);
+      octx.fillStyle = 'rgba(220,38,38,.12)';
+      octx.fillRect(b.x0 * scale + offX, b.y0 * scale + offY, (b.x1 - b.x0) * scale, (b.y1 - b.y0) * scale); octx.restore();
+    }
+  }
+  ['dimW', 'dimH', 'dimD', 'dimInk', 'dimEnable', 'normalize', 'showBox'].forEach(function (id) {
+    $(id).addEventListener('change', render);
+    $(id).addEventListener('input', render);
+  });
+  function roundBox(b) { return { x0: Math.round(b.x0), y0: Math.round(b.y0), x1: Math.round(b.x1), y1: Math.round(b.y1) }; }
+
+  // ---------- 几何对比 ----------
+  $('btnRef').onclick = function () { $('refInput').click(); };
+  $('refInput').onchange = function () {
+    var f = $('refInput').files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        var cx = c.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0);
+        var id = cx.getImageData(0, 0, c.width, c.height);
+        state.ref = { name: f.name, data: new Uint8ClampedArray(id.data), w: c.width, h: c.height };
+        $('btnCompare').disabled = false;
+        $('compareResult').classList.remove('hidden');
+        $('compareResult').textContent = '基准图已载入：' + f.name + '（' + c.width + '×' + c.height + '）。点「对比当前图」查看结构漂移提示。';
+        addLog('载入基准图 ' + f.name);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+    $('refInput').value = '';
+  };
+  $('btnCompare').onclick = function () {
+    var d = activeDoc(); if (!d || !state.ref) return;
+    var s = CORE.geometryScore(state.ref.data, state.ref.w, state.ref.h, d.current, d.w, d.h);
+    var level = s >= 0.85 ? '结构基本一致' : (s >= 0.70 ? '存在可见差异，需人工核对格数/部件数量' : '差异较大，几何很可能已漂移');
+    $('compareResult').classList.remove('hidden');
+    $('compareResult').textContent = '相似度 ' + (s * 100).toFixed(1) + '% · ' + level + '。该分数受背景与内容变化影响，只作提示，务必放大人眼核对。';
+    addLog('几何对比 ' + d.name + ' → ' + (s * 100).toFixed(1) + '%');
+  };
+
+  // ---------- 导出 ----------
+  function canvasToBytes(canvas) {
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (blob) {
+        blob.arrayBuffer().then(function (buf) { resolve(new Uint8Array(buf)); });
+      }, 'image/png');
+    });
+  }
+  function download(blob, name) {
+    var a = document.createElement('a'), url = URL.createObjectURL(blob);
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  }
+  function outName(d) { return d.name.replace(/\.[^.]+$/, '') + '_listing.png'; }
+  $('btnExportOne').onclick = function () {
+    var d = activeDoc(); if (!d) { alert('先导入一张图片'); return; }
+    finalCanvas(d).toBlob(function (b) { download(b, outName(d)); addLog('导出 ' + outName(d)); }, 'image/png');
+  };
+  $('btnExportAll').onclick = async function () {
+    if (!state.docs.length) { alert('先导入图片'); return; }
+    var entries = [];
+    for (var i = 0; i < state.docs.length; i++) {
+      var d = state.docs[i];
+      entries.push({ name: outName(d), bytes: await canvasToBytes(finalCanvas(d)) });
+    }
+    download(new Blob([CORE.zipStore(entries)], { type: 'application/zip' }), 'listing-images.zip');
+    addLog('批量导出 ' + entries.length + ' 张（ZIP）');
+  };
+
+  // ---------- 合规自检 ----------
+  $('layers').innerHTML = LAYERS.map(function (l, i) {
+    return '<label class="layer"><input type="checkbox" id="layer' + i + '"><div><b>' + l[0] + ' · ' + l[1] + '</b><span>' + l[2] + '</span></div></label>';
+  }).join('');
+  $('btnRunCheck').onclick = function () {
+    if (!state.docs.length) { alert('先导入图片'); return; }
+    var rows = [], totalWarn = 0;
+    state.docs.forEach(function (d) {
+      var r = CORE.checkImage(d.current, d.w, d.h, { target: 1200 });
+      state.checks[d.id] = r; totalWarn += r.counts.warn;
+      rows.push('<tr><td>' + escapeHtml(d.name) + '<br><span style="color:var(--muted);font-size:11px">' + d.w + '×' + d.h + '</span></td><td>' +
+        r.items.map(function (it) {
+          return '<div style="margin-bottom:5px"><span class="pill ' + it.level + '">' + (it.level === 'pass' ? 'PASS' : it.level === 'warn' ? 'WARN' : 'FAIL') + '</span> ' + escapeHtml(it.msg) + '</div>';
+        }).join('') + '</td></tr>');
+    });
+    $('checkTable').querySelector('tbody').innerHTML = rows.join('');
+    $('checkKpi').innerHTML =
+      '<div class="kpi"><div class="k">图片数</div><div class="v">' + state.docs.length + '</div></div>' +
+      '<div class="kpi good"><div class="k">通过项</div><div class="v">' + state.docs.reduce(function (s, d) { return s + state.checks[d.id].counts.pass; }, 0) + '</div></div>' +
+      '<div class="kpi ' + (totalWarn ? 'bad' : 'good') + '"><div class="k">待人工核验</div><div class="v">' + totalWarn + '</div></div>';
+    addLog('合规自检完成，' + totalWarn + ' 项待人工核验');
+  };
+
+  // ---------- 溯源报告 ----------
+  function yamlStr(s) { return '"' + String(s === undefined ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ') + '"'; }
+  $('btnGenReport').onclick = function () {
+    if (!state.docs.length) { alert('先导入图片'); return; }
+    state.docs.forEach(function (d) { if (!state.checks[d.id]) state.checks[d.id] = CORE.checkImage(d.current, d.w, d.h, { target: 1200 }); });
+    var layers = LAYERS.map(function (l, i) { return '      ' + l[0] + ': ' + ($('layer' + i).checked ? 'PASS' : 'UNCHECKED'); });
+    var now = new Date();
+    var stamp = now.toISOString().slice(0, 10) + '-' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    var geo = $('rpGeometry').value.split(/[,，]/).map(function (s) { return s.trim(); }).filter(Boolean);
+    var L = [];
+    L.push('design_id: ' + yamlStr('listing-' + stamp));
+    L.push('platform: ' + yamlStr($('rpPlatform').value));
+    L.push('product: ' + yamlStr($('rpProduct').value || '未填写'));
+    L.push('generated_at: ' + yamlStr(now.toISOString()));
+    L.push('tool: ' + yamlStr('listing-image-workbench v1.0'));
+    L.push('privacy: ' + yamlStr('本地浏览器处理，图片未上传'));
+    L.push('output: ' + yamlStr($('normalize').checked ? '1200x1200 1:1 白底' : '原尺寸'));
+    if (geo.length) { L.push('geometry_locked:'); geo.forEach(function (g) { L.push('  - ' + yamlStr(g)); }); }
+    L.push('images:');
+    state.docs.forEach(function (d) {
+      var r = state.checks[d.id];
+      L.push('  - file: ' + yamlStr(outName(d)));
+      L.push('    source: ' + yamlStr(d.name));
+      L.push('    source_size: ' + yamlStr(d.w + 'x' + d.h));
+      L.push('    content_bbox: ' + yamlStr(r.bbox ? [r.bbox.x0, r.bbox.y0, r.bbox.x1, r.bbox.y1].join(',') : 'none'));
+      L.push('    processing:');
+      if (!d.steps.length) L.push('      - step: none (原图导出)');
+      d.steps.forEach(function (s) {
+        var p = Object.keys(s.params).map(function (k) {
+          var v = s.params[k];
+          return k + '=' + (typeof v === 'object' ? JSON.stringify(v) : v);
+        }).join(' ');
+        L.push('      - step: ' + s.step + (p ? ' | ' + p : ''));
+      });
+      L.push('    checks:');
+      r.items.forEach(function (it) { L.push('      - ' + it.code + ': ' + it.level.toUpperCase() + ' # ' + it.msg.replace(/#/g, '')); });
+      if ($('dimEnable').checked) {
+        L.push('    dimensions_cm: ' + yamlStr([$('dimW').value, $('dimH').value, $('dimD').value].join(' x ')));
+        L.push('    dimension_label: ' + yamlStr('双单位 cm/in 工程线，导出时叠加，未烧入底图'));
+      }
+    });
+    L.push('compliance:');
+    L.push('  layers:');
+    L.push.apply(L, layers);
+    L.push('  layers_passed: ' + LAYERS.filter(function (_, i) { return $('layer' + i).checked; }).length + '/' + LAYERS.length);
+    L.push('  ai_disclosure: ' + yamlStr('按平台当期规则处理；本工具不写入 C2PA/EXIF，需外部补签'));
+    L.push('notes:');
+    L.push('  - ' + yamlStr('自动检测仅提示风险，右下角水印与几何结构必须人工放大核验'));
+    L.push('  - ' + yamlStr('保留原始实拍图、中间产物与本报告作为来源证据链'));
+    L.push('  - ' + yamlStr('平台规范与 AI 标识要求以官方当期政策为准，本报告不构成合规保证'));
+    state.report = L.join('\n');
+    $('reportOut').textContent = state.report;
+    addLog('生成溯源报告（' + state.docs.length + ' 张图）');
+  };
+  $('btnCopyReport').onclick = function () {
+    if (!state.report) { alert('先生成报告'); return; }
+    navigator.clipboard.writeText(state.report).then(function () { addLog('报告已复制'); }, function () { alert('复制失败，请手动选中文本'); });
+  };
+  $('btnDownloadReport').onclick = function () {
+    if (!state.report) { alert('先生成报告'); return; }
+    download(new Blob([state.report], { type: 'text/yaml;charset=utf-8' }), 'compliance_report.yaml');
+    addLog('下载 compliance_report.yaml');
+  };
+})();
+</script>
+</body>
+</html>
